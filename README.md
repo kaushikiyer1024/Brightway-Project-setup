@@ -21,6 +21,14 @@ Before using this script, you must have the following installed:
 
 You will also need **local copies** of your background database in `ecospold2` format. For ecoinvent, this means downloading the `7z` or `zip` file of the unlinked database from their website and extracting it. 
 
+This code also has the functionality to extract and write custom versions of the characterization methods. bw2io and EcoinventLCIAImporter by default uses v3.9 of the characterization methods but if you want to use updated versions, it is possible. You only have to make these following changes to your brightway installation and codebase: 
+
+As of 2026-03-25
+*If you have installed brightway using an anaconda environment, go to Directory/anaconda/envs/*env_name*/Lib/site-packages/bw2io/data and replace the existing _init_.py file with the _init_.py in this github repository. 
+*In *Directory*/anaconda/envs/*env_name*/Lib/site-packages/bw2io/importers, replace the ecoinvent_lcia.py file with the ecoinvent_lcia.py file in this repo. 
+
+If you want to use the default characterization methods by bw2io, then you dont need to update any library files, you can directly save project_setup.py in your project directory and use it.  
+
 The extracted folder should contain at least two subfolders:
 * `MasterData/` (contains `ElementaryExchanges.xml`)
 * `datasets/` (contains the thousands of individual `.xml` activity files)
