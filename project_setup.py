@@ -96,6 +96,7 @@ class BrightwayProjectSetup:
                              biosphere_db_name: str = 'biosphere3', 
                              bg_db_name: Optional[str] = None
                             ):
+        print(bd.databases)
         # It is safer to require a background database name rather than assuming  a default.
         if bg_db_name is None:
             bg_db_name='ecoinvent-v3.9-cutoff'
@@ -126,12 +127,39 @@ class BrightwayProjectSetup:
             print(f"Importing and installing foreground '{database_name}' database. ")
             foreground_excel_database=bi.ExcelImporter(database_path)
             foreground_excel_database.apply_strategies()
-            foreground_excel_database.match_database(bg_db_name,fields=["name", "unit", "location","reference product"])
-            foreground_excel_database.match_database(biosphere_db_name,fields=["name", "unit", "reference product", "location"])
+            required_databases=set()
+            for activity in foreground_excel_database.data:
+                for exc in activity.get('exchanges',[]):
+                    db_name=exc.get('database')
+                    if db_name:
+                        required_databases.add(db_name)
+
+            print(f'Detected dependenices for {database_name}: {required_databases}\n')
+
+            required_databases.discard(database_name)
+            missing_databases=set(required_databases)-set((bd.databases))
+            
+            if missing_databases:
+                raise ValueError(f'Install {missing_databases} first before installing {database_name}') 
+            
+            for db_name in required_databases:
+                if db_name not in list(bd.databases):
+                    raise ValueError(f'{db_name} not in the list of installed brightway databases in your project. Install ')
+                print(f'Attempting to match dependcies against: {db_name}...')
+
+                foreground_excel_database.match_database(db_name, fields=['name', 'unit', 'categories', 'location', 'reference product'])
+            
             foreground_excel_database.statistics()
-            foreground_excel_database.write_excel(database_name)
-            foreground_excel_database.write_database()
-            print(f"{database_name} has been imported and registered as a Brightway2 database.")
+            unlinked_exchanges=len(list(foreground_excel_database.unlinked
+                                            ))
+            if unlinked_exchanges==0:
+            
+                foreground_excel_database.write_database()
+                print(f"Successfully imported '{database_name}' with no unlinked exchanges.")
+            else:
+                print(f"Warning: Imported '{database_name}' with {unlinked_exchanges} unlinked exchanges. Check the logs for details.")
+                foreground_excel_database.write_excel(database_name)
+            
             foreground_database_class=bd.Database(database_name)
             return foreground_database_class, database_name
         else:
